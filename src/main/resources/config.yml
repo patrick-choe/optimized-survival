@@ -23,6 +23,7 @@ exclusions:
   - Pose
   - Recipe
   - Spawn
+  - Spectating
   - Statistic
   # optional
   - Air

@@ -27,6 +27,7 @@ import org.bukkit.scoreboard.DisplaySlot
 import org.bukkit.scoreboard.Objective
 import java.io.File
 import java.util.jar.JarFile
+import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.isSubclassOf
 
 @Suppress("unused")
@@ -58,7 +59,9 @@ class OptimizedSurvivalPlugin : JavaPlugin() {
                 logger.info("New Register: ${player.name}")
             }
 
-            if (player in entities) {
+            if (player in entities && !entities.filterIsInstance<Player>().any { entity ->
+                player != entity
+            }) {
                 val name = event.eventName.removePrefix("Player").removePrefix("Entity").removeSuffix("Event")
                 objective.getScore(name).score++
             }
@@ -70,10 +73,10 @@ class OptimizedSurvivalPlugin : JavaPlugin() {
         val packages = config.getStringList("packages")
 
         val jarFile = JarFile(File(Event::class.java.protectionDomain.codeSource.location.file))
-        val entries = jarFile.entries()
+        val entries = jarFile.entries().iterator()
 
-        while (entries.hasMoreElements()) {
-            val entry = entries.nextElement()
+        while (entries.hasNext()) {
+            val entry = entries.next()
             if (entry.isDirectory || !entry.name.endsWith(".class")) {
                 continue
             }
@@ -98,7 +101,7 @@ class OptimizedSurvivalPlugin : JavaPlugin() {
                     continue
                 }
 
-                if (exclusions.any(clazz.name::contains) || clazz.getAnnotation(Deprecated::class.java) != null) {
+                if (exclusions.any(clazz.name::contains) || clazz.kotlin.hasAnnotation<java.lang.Deprecated>()) {
                     continue
                 }
 
@@ -118,7 +121,6 @@ class OptimizedSurvivalPlugin : JavaPlugin() {
         }
 
         logger.info("Loaded ${added.count()} classes.")
-        logger.info(added.joinToString(", ", "[", "]"))
     }
 
     override fun onDisable() {
